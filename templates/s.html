@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>超大井字棋</title>
+  <style>
+    .game-board {
+      display: flex;
+      flex-wrap: wrap;
+      width: 800px;
+      height: 800px;
+      margin: 0 auto;
+    }
+
+    .board {
+      display: flex;
+      flex-wrap: wrap;
+      width: 206px;
+      height: 206px;
+      margin:2px;
+    }
+
+    .cell {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 66.66px;
+      height: 66.66px;
+      border: 1px solid black;
+      font-size: 40px;
+      cursor: pointer;
+    }
+    
+    /* 添加蓝色和红色的样式 */
+    .cell-blue {
+      background-color: blue;
+      color: white;
+    }
+    
+    .cell-red {
+      background-color: red;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+    <center>
+        <h1>Tic Tac Toe</h1>
+        <p>Game Code: {{code}}</p>
+    </center>
+  <center><div class="game-board"></div></center>
+
+  <script>
+    // 创建游戏棋盘数组
+    const gameBoard = [];
+    for (let i = 0; i < 9; i++) {
+      gameBoard.push(new Array(9).fill(null));
+    }
+
+    // 当前玩家
+    let currentPlayer = 'X';
+
+    // 创建游戏界面
+    const gameContainer = document.querySelector('.game-board');
+    for (let i = 0; i < 9; i++) {
+      const subBoard = document.createElement('div');
+      subBoard.classList.add('board');
+      
+      for (let j = 0; j < 9; j++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.setAttribute('data-row', i);
+        cell.setAttribute('data-col', j);
+        cell.addEventListener('click', makeMove);
+        subBoard.appendChild(cell);
+      }
+      
+      gameContainer.appendChild(subBoard);
+    }
+
+    // 处理玩家点击事件
+    function makeMove(event) {
+      const row = parseInt(event.target.getAttribute('data-row'));
+      const col = parseInt(event.target.getAttribute('data-col'));
+
+      if (!gameBoard[row][col]) {
+        gameBoard[row][col] = currentPlayer;
+        event.target.textContent = currentPlayer;
+
+        // 发送更新请求
+        const requestBody = JSON.stringify({
+          row: row,
+          col: col,
+          player: currentPlayer
+        });
+        fetch(`/update/{{code}}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: requestBody
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log(data);
+          // 修改小方格的颜色
+          event.target.classList.add(currentPlayer === 'X' ? 'cell-blue' : 'cell-red');
+
+          // 切换玩家
+          currentPlayer = (currentPlayer === 'X') ? 'O' : 'X';
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+      }
+    }
+  </script>
+</body>
+</html>
