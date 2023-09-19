@@ -46,18 +46,24 @@
     <center>
         <h1>Tic Tac Toe</h1>
         <p>Game Code: {{code}}</p>
+        <p>Pass Code: {{passcode}}</p>
     </center>
   <center><div class="game-board"></div></center>
 
   <script>
     // 创建游戏棋盘数组
-    const gameBoard = [];
-    for (let i = 0; i < 9; i++) {
-      gameBoard.push(new Array(9).fill(null));
-    }
+    const gameBoard = {{ game_board | tojson }};
 
-    // 当前玩家
-    let currentPlayer = 'X';
+    // 计算当前玩家
+    let currentPlayer;
+    const countX = gameBoard.flat().filter(cell => cell === 'X').length;
+    const countO = gameBoard.flat().filter(cell => cell === 'O').length;
+
+    if (countX > countO) {
+      currentPlayer = 'O';
+    } else {
+      currentPlayer = 'X';
+    }
 
     // 创建游戏界面
     const gameContainer = document.querySelector('.game-board');
@@ -71,18 +77,39 @@
         cell.setAttribute('data-row', i);
         cell.setAttribute('data-col', j);
         cell.addEventListener('click', makeMove);
+
+        // 渲染默认状态
+        if (gameBoard[i][j]) {
+          cell.textContent = gameBoard[i][j];
+
+          // 修改小方格的颜色
+          cell.classList.add(gameBoard[i][j] === 'X' ? 'cell-blue' : 'cell-red');
+        }
+        
         subBoard.appendChild(cell);
       }
       
       gameContainer.appendChild(subBoard);
     }
 
-    // 处理玩家点击事件
+    let requestInProgress = false;
+
     function makeMove(event) {
+      if (requestInProgress) {
+        alert('该页面未保存，请稍后再尝试。');
+        return;
+      }
+
       const row = parseInt(event.target.getAttribute('data-row'));
       const col = parseInt(event.target.getAttribute('data-col'));
 
       if (!gameBoard[row][col]) {
+        // 切换玩家
+        currentPlayer = (currentPlayer === 'X') ? 'O' : 'X';
+
+        // 修改小方格的颜色
+        event.target.classList.add(currentPlayer === 'X' ? 'cell-blue' : 'cell-red');
+
         gameBoard[row][col] = currentPlayer;
         event.target.textContent = currentPlayer;
 
@@ -92,6 +119,9 @@
           col: col,
           player: currentPlayer
         });
+
+        requestInProgress = true;
+
         fetch(`/update/{{code}}`, {
           method: 'POST',
           headers: {
@@ -102,17 +132,16 @@
         .then(response => response.json())
         .then(data => {
           console.log(data);
-          // 修改小方格的颜色
-          event.target.classList.add(currentPlayer === 'X' ? 'cell-blue' : 'cell-red');
-
-          // 切换玩家
-          currentPlayer = (currentPlayer === 'X') ? 'O' : 'X';
+          requestInProgress = false;
         })
         .catch(error => {
           console.error('Error:', error);
+          requestInProgress = false;
         });
       }
     }
-  </script>
+</script>
+
+
 </body>
 </html>

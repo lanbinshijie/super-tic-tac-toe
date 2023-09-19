@@ -10,8 +10,9 @@ room_info = {}
 
 @app.route("/")
 def start():
-    code = generate_code()
-    return redirect(f"/{code}")
+    # code = generate_code()
+    # return redirect(f"/{code}")
+    return render_template("index.html")
 
 @app.route("/<string:code>")
 def play(code):
@@ -19,12 +20,19 @@ def play(code):
         code = generate_code()
         return redirect(f"/{code}")
     if code not in room_info:
-        room_info[code] = {'game_board': [[None]*9 for _ in range(9)]}
-    print(room_info)
+        room_info[code] = {
+            'game_board': [[None]*9 for _ in range(9)],
+            "passcode": generate_pass()
+        }
+    else:
+        if not room_info[code]["passcode"] in request.args:
+            return render_template("e.html")
+        
+    # print(room_info)
     
-    # 在这里完成游戏逻辑
+    game_board = room_info[code]['game_board']
     
-    return render_template("s.html", code=code)
+    return render_template("s.html", code=code, game_board=game_board, passcode=room_info[code]["passcode"])
 
 @app.route("/update/<string:code>", methods=["POST"])
 def update(code):
@@ -39,7 +47,7 @@ def update(code):
         
         # 更新棋盘
         game_board[row][col] = player
-        print(game_board)
+        # print(game_board)
         
         # 返回成功的响应
         return {"message": "Update successful."}
@@ -49,6 +57,10 @@ def update(code):
 
 def generate_code():
     code = ''.join(random.choices(string.ascii_uppercase, k=6))
+    return code
+
+def generate_pass():
+    code = ''.join(random.choices(["0","1","2","3","4","5","6","7","8","9"], k=6))
     return code
 
 def is_valid_code(code):
