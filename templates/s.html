@@ -59,7 +59,7 @@
   <div class="room-info">
       <p>Game Code: {{code}}</p>
       <p>Pass Code: {{passcode}}</p>
-      <p id="status" style="color: green;">开始下棋吧！</p>
+      <p id="status" style="color: green;">您是最新的！✔</p>
       <p style="color: blue">X玩家下了 <span id="x-times">0</span> 次</p>
       <p style="color: red">O玩家下了 <span id="o-times">0</span> 次</p>
   </div>
@@ -67,10 +67,74 @@
   
 
   <script>
+    // 定义一些函数
+    function update_player_times(){
+      x_times_dis.innerText = countX;
+      o_times_dis.innerText = countO;
+    }
+
+    function setOutlineColor(elementId, color) {
+      var element = document.getElementById(elementId);
+      if (element) {
+        element.style.outline = '4px solid ' + color;
+        element.style.outlineOffset = "-2px"
+      }
+    }   
+    
+    function clearOutline() {
+      for (var i = 0; i <= 8; i++) {
+        var elementId = 'board_' + i;
+        var element = document.getElementById(elementId);
+        if (element) {
+          element.style.outline = 'none';
+        }
+      }
+    }
+
+    function setBlockGot(elementId, color) {
+      var element = document.getElementById(elementId);
+      if (element) {
+        element.style.background = color;
+        element.style.outline = '4px solid ' + color;
+      }
+    }
+
+    function checkWin(boardElement) {
+      const cells = boardElement.getElementsByClassName('cell');
+
+      // 获取每个格子的值
+      const values = Array.from(cells).map(cell => cell.textContent);
+
+      // 检查行
+      for (let i = 0; i < 9; i += 3) {
+        if (values[i] !== '' && values[i] === values[i + 1] && values[i + 1] === values[i + 2]) {
+          return values[i];
+        }
+      }
+
+      // 检查列
+      for (let i = 0; i < 3; i++) {
+        if (values[i] !== '' && values[i] === values[i + 3] && values[i + 3] === values[i + 6]) {
+          return values[i];
+        }
+      }
+
+      // 检查对角线
+      if (values[0] !== '' && values[0] === values[4] && values[4] === values[8]) {
+        return values[0];
+      }
+      if (values[2] !== '' && values[2] === values[4] && values[4] === values[6]) {
+        return values[2];
+      }
+
+      return 'None';
+    }
+    
     // 创建游戏棋盘数组
     const gameBoard = {{ game_board | tojson }};
     const x_times_dis = document.getElementById("x-times");
     const o_times_dis = document.getElementById("o-times");
+    let getStatus = [0,0,0,0,0,0,0,0,0]
 
     // 计算当前玩家
     let currentPlayer;
@@ -82,29 +146,9 @@
     } else {
       currentPlayer = 'X';
     }
-    function update_player_times(){
-      x_times_dis.innerText = countX;
-      o_times_dis.innerText = countO;
-    }
+
     update_player_times();
 
-    function setOutlineColor(elementId, color) {
-      var element = document.getElementById(elementId);
-      if (element) {
-        element.style.outline = '4px solid ' + color;
-        element.style.outlineOffset = "-2px"
-      }
-    }
-
-    function clearOutline() {
-      for (var i = 0; i <= 8; i++) {
-        var elementId = 'board_' + i;
-        var element = document.getElementById(elementId);
-        if (element) {
-          element.style.outline = 'none';
-        }
-      }
-    }
     // 创建游戏界面
     const gameContainer = document.querySelector('.game-board');
     for (let i = 0; i < 9; i++) {
@@ -152,7 +196,8 @@
 
       if (!gameBoard[row][col]) {
         let stat = document.getElementById("status");
-        if(event.target.parentNode.id != nextMoveBoard && nextMoveBoard != "any") {
+        let nowBlock = event.target.parentNode.id
+        if(nowBlock != nextMoveBoard && nextMoveBoard != "any") {
           stat.style="color: red"
           stat.innerText = "❌你不能这么走哦~"
           return;
@@ -176,9 +221,22 @@
 
         // 修改小方格的颜色
         event.target.classList.add(currentPlayer === 'X' ? 'cell-blue' : 'cell-red');
-
         gameBoard[row][col] = currentPlayer;
         event.target.textContent = currentPlayer;
+
+        let nowId = parseInt(nowBlock.match(/\d+/)[0]);
+        if(getStatus[nowId] == 0){
+          let nowBlockElement = document.getElementById(nowBlock)
+          let win = checkWin(nowBlockElement)
+          console.log(win)
+          if (win == "X"){
+            getStatus[nowId] = 1
+            setBlockGot(nowBlock, "#03a9f44a")
+          } else if (win == "O") {
+            getStatus[nowId] = 2
+            setBlockGot(nowBlock, "#ff572245")
+          }
+        }
 
         // 发送更新请求
         const requestBody = JSON.stringify({
