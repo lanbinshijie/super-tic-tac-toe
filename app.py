@@ -24,6 +24,7 @@ def play(code):
             'game_board': [[None]*9 for _ in range(9)],
             "passcode": generate_pass()
         }
+        return redirect(f"/{code}?{room_info[code]['passcode']}")
     else:
         if not room_info[code]["passcode"] in request.args:
             return render_template("e.html")

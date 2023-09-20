@@ -6,8 +6,8 @@
     .game-board {
       display: flex;
       flex-wrap: wrap;
-      width: 800px;
-      height: 800px;
+      width: 634px;
+      height: auto;
       margin: 0 auto;
     }
 
@@ -40,36 +40,77 @@
       background-color: red;
       color: white;
     }
+
+    .room-info {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      border: 1px solid black;
+      border-radius: 2px;
+      margin: 8px;
+      padding: 12px;
+    }
   </style>
 </head>
 <body>
-    <center>
-        <h1>Tic Tac Toe</h1>
-        <p>Game Code: {{code}}</p>
-        <p>Pass Code: {{passcode}}</p>
-    </center>
-  <center><div class="game-board"></div></center>
+  <center>
+    <h1>Tic Tac Toe</h1>
+  </center>
+  <div class="room-info">
+      <p>Game Code: {{code}}</p>
+      <p>Pass Code: {{passcode}}</p>
+      <p id="status" style="color: green;">开始下棋吧！</p>
+      <p style="color: blue">X玩家下了 <span id="x-times">0</span> 次</p>
+      <p style="color: red">O玩家下了 <span id="o-times">0</span> 次</p>
+  </div>
+  <div class="game-board" style="position: absolute; left: 50%; transform: translateX(-50%);"></div>
+  
 
   <script>
     // 创建游戏棋盘数组
     const gameBoard = {{ game_board | tojson }};
+    const x_times_dis = document.getElementById("x-times");
+    const o_times_dis = document.getElementById("o-times");
 
     // 计算当前玩家
     let currentPlayer;
-    const countX = gameBoard.flat().filter(cell => cell === 'X').length;
-    const countO = gameBoard.flat().filter(cell => cell === 'O').length;
+    let countX = gameBoard.flat().filter(cell => cell === 'X').length;
+    let countO = gameBoard.flat().filter(cell => cell === 'O').length;
 
     if (countX > countO) {
       currentPlayer = 'O';
     } else {
       currentPlayer = 'X';
     }
+    function update_player_times(){
+      x_times_dis.innerText = countX;
+      o_times_dis.innerText = countO;
+    }
+    update_player_times();
 
+    function setOutlineColor(elementId, color) {
+      var element = document.getElementById(elementId);
+      if (element) {
+        element.style.outline = '4px solid ' + color;
+        element.style.outlineOffset = "-2px"
+      }
+    }
+
+    function clearOutline() {
+      for (var i = 0; i <= 8; i++) {
+        var elementId = 'board_' + i;
+        var element = document.getElementById(elementId);
+        if (element) {
+          element.style.outline = 'none';
+        }
+      }
+    }
     // 创建游戏界面
     const gameContainer = document.querySelector('.game-board');
     for (let i = 0; i < 9; i++) {
       const subBoard = document.createElement('div');
       subBoard.classList.add('board');
+      subBoard.id = "board_"+i.toString()
       
       for (let j = 0; j < 9; j++) {
         const cell = document.createElement('div');
@@ -92,11 +133,17 @@
       gameContainer.appendChild(subBoard);
     }
 
+    let nextMoveBoard = "any";
     let requestInProgress = false;
 
+    function getChessboardNumber(row, col) {
+      return row * 3 + col;
+    }
+
     function makeMove(event) {
+      
       if (requestInProgress) {
-        alert('该页面未保存，请稍后再尝试。');
+        alert('你下的太快了，让棋盘休息一下吧！');
         return;
       }
 
@@ -104,6 +151,26 @@
       const col = parseInt(event.target.getAttribute('data-col'));
 
       if (!gameBoard[row][col]) {
+        let stat = document.getElementById("status");
+        if(event.target.parentNode.id != nextMoveBoard && nextMoveBoard != "any") {
+          stat.style="color: red"
+          stat.innerText = "❌你不能这么走哦~"
+          return;
+        }
+        // 切换更新状态
+        stat.style="color: orange"
+        stat.innerText = "正在保存棋盘..."
+
+        clearOutline();
+        var iddd = col;
+        setOutlineColor("board_"+iddd.toString(), "#FF9800")
+        console.log("board_"+iddd.toString())
+        nextMoveBoard = "board_"+iddd.toString();
+
+        if(currentPlayer === 'X') countX += 1;
+        else countO += 1;
+        update_player_times();
+
         // 切换玩家
         currentPlayer = (currentPlayer === 'X') ? 'O' : 'X';
 
@@ -133,6 +200,8 @@
         .then(data => {
           console.log(data);
           requestInProgress = false;
+          stat.style="color: green"
+          stat.innerText = "您是最新的！✔"
         })
         .catch(error => {
           console.error('Error:', error);
