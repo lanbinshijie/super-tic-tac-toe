@@ -22,7 +22,11 @@ def play(code):
     if code not in room_info:
         room_info[code] = {
             'game_board': [[None]*9 for _ in range(9)],
-            "passcode": generate_pass()
+            "passcode": generate_pass(),
+            "player1": "",
+            "player2": "",
+            "winBoard": [0,0,0,0,0,0,0,0,0],
+            "gameend": False
         }
         return redirect(f"/{code}?{room_info[code]['passcode']}")
     else:
@@ -55,6 +59,29 @@ def update(code):
     
     # 返回错误的响应
     return {"message": "Error: Invalid room code."}, 400
+
+@app.route("/winablock/<string:code>", methods=["POST"])
+def winablock(code):
+    if code in room_info:
+        req_data = request.get_json()
+        ider = req_data['ider']
+        goter = req_data['goter']
+        room_info[code]["winboard"][int(ider)] = goter
+        return {"message": "Update successful."}
+    return {"message": "Error: Invalid room code."}, 400
+
+
+@app.route("/setName/<string:code>", methods=["POST"])
+def setName(code):
+    player1 = request.values.get('player1')
+    player2 = request.values.get('player2')
+    if code in room_info:
+        room_info[code]["player1"] = player1
+        room_info[code]["player2"] = player2
+        return {"message": "Update successful."}
+
+    return {"message": "Error: Invalid room code."}, 400
+
 
 def generate_code():
     code = ''.join(random.choices(string.ascii_uppercase, k=6))
